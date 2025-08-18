@@ -22,34 +22,26 @@ dist = np.array([
 
 
 def main():
-    HandFlipPath = r'E:\pyproject\visionSE\video\HandFlip.mp4'
-    HandFlipAndPinch2Path = r'E:\pyproject\visionSE\video\HandFlipAndPinch.mp4'
-    HandPinchMovePath = r'E:\pyproject\visionSE\video\HandPinchMove.mp4'
-    AllTestPath = r'E:\pyproject\visionSE\video\AllTest.mp4'
-    url = "http://192.168.77.42:8080//video"
-    cap = cv.VideoCapture(0)
+    HandFlipPath = r'video\HandFlip.mp4'
+    HandFlipAndPinch2Path = r'video\HandFlipAndPinch.mp4'
+    HandPinchMovePath = r'video\HandPinchMove.mp4'
+    AllTestPath = r'video\AllTest.mp4'
+    cap = cv.VideoCapture(AllTestPath)
     hand = HandHCI()
 
     while 1:
         succes,img = cap.read()
-        w=img.shape[1]
-        h=img.shape[0]
-        # img = cv.flip(img,1)
-        # newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-        # img = cv.undistort(img, mtx, dist, None, newcameramtx)
-
 
         if succes :
-            # 获取左右手的信息
-            rthand = hand.findRtHands(img)
+            # 获取左手的信息
             lfhand = hand.findLfHands(img)
             # print(lfhand)
 
             # print(hand.isFront(lfhand))
 
-            # 判断正手捏合
-            isFront = hand.isFront(lfhand)
-            isPinch = hand.fingersPinch(lfhand)
+            # 判断正手捏合(flalse: 是否显示关键点)
+            isFront = hand.isFront(lfhand,False)
+            isPinch = hand.fingersPinch(lfhand,False)
             # print(f'isFront: {isFront}')
             # print(f'isPinch: {isPinch}')
 

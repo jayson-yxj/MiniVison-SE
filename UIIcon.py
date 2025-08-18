@@ -8,21 +8,16 @@ import time
 
 class DynamicIconOverlay:
     def __init__(self, icon_path, initial_size=None, alpha=1):
-        """
-        初始化动态图标叠加器
-        :param icon_path: 图标文件路径
-        :param initial_size: 初始大小 (宽度, 高度) 或缩放因子
-        :param alpha: 初始透明度
-        """
+
         # 加载原始图标并保留透明度
         self.original_icon = cv2.imread(icon_path, cv2.IMREAD_UNCHANGED)
         if self.original_icon is None:
             raise ValueError(f"无法加载图标: {icon_path}")
         
-        # 存储原始尺寸
+        # 原始尺寸
         self.original_height, self.original_width = self.original_icon.shape[:2]
         
-        # 设置初始大小
+        # 初始化大小
         if initial_size is None:
             # 默认使用原始大小
             self.icon = self.original_icon.copy()
@@ -46,13 +41,9 @@ class DynamicIconOverlay:
         # 透明度控制 (0.0 = 完全透明, 1.0 = 完全不透明)
         self.alpha = alpha
     
+    # 设置缩放尺寸
     def set_size(self, width, height):
-        """
-        设置图标大小
-        :param width: 新宽度
-        :param height: 新高度
-        """
-        # 安全限制最大尺寸
+        # 限制最大尺寸
         max_size = 1024  # 最大尺寸限制
         width = min(max(10, width), max_size)
         height = min(max(10, height), max_size)
@@ -62,12 +53,9 @@ class DynamicIconOverlay:
         self.width = self.icon.shape[1]
         self.height = self.icon.shape[0]
     
+    # 设置缩放系数
     def set_scale(self, scale_factor):
-        """
-        按比例缩放图标
-        :param scale_factor: 缩放因子 (1.0 = 原始大小)
-        """
-        # 安全限制缩放范围
+        # 限制缩放范围
         scale_factor = max(0.1, min(scale_factor, 10.0))
         
         # 计算新尺寸
@@ -77,32 +65,29 @@ class DynamicIconOverlay:
         # 设置新尺寸
         self.set_size(new_width, new_height)
     
+    # 设置透明度
     def set_alpha(self, alpha):
-        """
-        设置图标透明度
-        :param alpha: 透明度值 (0.0 - 1.0)
-        """
-        # 确保透明度在有效范围内
+        # 确保透明度合法
         self.alpha = max(0.0, min(1.0, alpha))
     
+    # 淡入动画
     def fade_in(self, duration=1.0):
-        """淡入动画"""
         self.set_alpha(0.0)
         self.target_alpha = 1.0
         self.fade_duration = duration
         self.fade_start_time = time.time()
         self.is_fading = True
     
+    # 淡出动画
     def fade_out(self, duration=1.0):
-        """淡出动画"""
         self.set_alpha(1.0)
         self.target_alpha = 0.0
         self.fade_duration = duration
         self.fade_start_time = time.time()
         self.is_fading = True
-    
+
+    # 更新淡入淡出动画
     def update_fade(self):
-        """更新淡入淡出动画"""
         if not hasattr(self, 'is_fading') or not self.is_fading:
             return
         
@@ -117,28 +102,23 @@ class DynamicIconOverlay:
         # 检查动画是否完成
         if progress >= 1.0:
             self.is_fading = False
-    
+
+    # 更新图标坐标
     def update_position(self, x, y):
-        """更新图标坐标"""
+    
         self.x = x
         self.y = y
         self.last_update_time = time.time()
     
+    # 显示图标
     def show_icon(self):
-        """显示图标"""
         self.icon_visible = True
     
+    # 隐藏图标
     def hide_icon(self):
-        """隐藏图标"""
         self.icon_visible = False
     
     def overlay(self, background):
-        """
-        将图标叠加到背景图像上，支持部分超出边界显示
-        :param background: 背景图像 (BGR格式)
-        :return: 叠加后的图像
-        """
-        # 更新淡入淡出动画
         self.update_fade()
         
         # 如果图标不可见或完全透明，直接返回背景
@@ -191,7 +171,7 @@ class DynamicIconOverlay:
             # 调整ROI大小以匹配图标可见部分
             roi = cv2.resize(roi, (visible_width, visible_height))
         
-        # 分离alpha通道（如果存在）
+        # 分离alpha通道
         if visible_icon.shape[2] == 4:
             b, g, r, a = cv2.split(visible_icon)
             # 应用整体透明度
@@ -219,10 +199,10 @@ class DynamicIconOverlay:
         
         return result
     
+        # 获取当前图标尺寸
     def get_current_size(self):
-        """获取当前图标尺寸 (宽度, 高度)"""
         return self.width, self.height
-    
+
+        # 获取原始图标尺寸
     def get_original_size(self):
-        """获取原始图标尺寸 (宽度, 高度)"""
         return self.original_width, self.original_height

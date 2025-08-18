@@ -68,31 +68,35 @@ class IconAnimator:
         
         return result_img
     
+    # 缓入缓出函数
     def ease_in_out(self, t):
-        """缓入缓出函数"""
         if t < 0.5:
             return 2 * t * t
         else:
             return -1 + (4 - 2 * t) * t
-    
+        
+    # 重置动画状态
     def reset_animation(self):
-        """重置动画状态"""
+
         self.animation_start_time = None
         self.current_scale = self.min_scale
         self.animation_complete = False  # 动画是否完成
-    
+
+    # 设置动画速度（动画完成时间）
     def set_animation_speed(self, duration):
-        """设置动画速度（持续时间）"""
+
         self.animation_duration = max(0.1, duration)
-    
+        
+    # 设置缩放范围
     def set_scale_range(self, min_scale, max_scale):
-        """设置缩放范围"""
+
         self.min_scale = max(0.01, min_scale)
         self.max_scale = min(10.0, max_scale)
         self.animation_complete = False
-    
+
+    # 检查动画是否完成
     def is_animation_complete(self):
-        """检查动画是否完成"""
+        # 检查动画是否完成
         return self.animation_complete
 
  
