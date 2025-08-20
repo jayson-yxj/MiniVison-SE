@@ -6,7 +6,9 @@ from collections import deque
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from comtypes import CLSCTX_ALL
 from ctypes import cast, POINTER
-from IconAnimator import IconAnimator  # 导入自定义的图标动画工具
+from IconAnimator import IconAnimator
+from Menu import Menu
+from DataProces import Data
 
 '''
 手势交互的主文件，获取关于手势操作的所有信息
@@ -56,23 +58,30 @@ class HandHCI():
         # 获取系统音量范围
         self.volRange = self.volume.GetVolumeRange()
         self.minVol, self.maxVol = self.volRange[0], self.volRange[1]  # 音量最小值和最大值
-        
+        # ------------------------------------数据处理器--------------------------------------------#
+        self.data = Data()
         # -----------------------------------菜单系统状态管理--------------------------------------- #
-        self.frontPinchHistory = False          # 正手捏合的历史状态 (用于状态切换检测)
-        self.frontPinch = False                 # 当前正手捏合的状态
-        self.frontRelease = False               # 正手松开的状态
+        self.frontPinchHistory = False          # 正手捏合的历史状态 (用于状态切换检测)(也可以是长按的判定)
+        self.frontPinch = False                 # 当前正手单击瞬间的状态
+        self.frontRelease = False               # 正手松开瞬间的状态
         self.Front = False                      # 当前是否为正手状态
         self.MenuBall = False                   # 菜单球存在状态
         self.Menu = False                       # 菜单存在状态
-        self.PinchTime = deque([0], maxlen=2)   # 捏合时间记录 (用于双击检测)
-        self.RightPinchTime = 1.0               # 双击间隔时间阈值(秒)
-        self.PinchIndex = 0                     # 捏合动作计数器 (用于双击计数)
+        self.PinchIndex = 0                     # 单击次数计数器
+        self.point_menuball = None              # 初始化菜单定位
+        self.point_menu = None
+        self.TowFinger_cx = None
+        self.TowFinger_cy = None
+        self.TowFingerLenght = 0                # 双指距离
         
         # -----------------------------------图标动画器初始化------------------------------------------- #
         # 初始化菜单图标动画器 (带放大效果)
-        self.animator = IconAnimator(r'icon_images\image copy 4.png', max_scale=4, alpha=0.7, animation_duration=0.6)
+        self.Menu_animator = IconAnimator(r'icon_images\image copy 4.png', max_scale=4, alpha=0.7, animation_duration=0.6)
         # 初始化菜单球图标动画器 (轻微放大效果)
         self.MenuBall_animator = IconAnimator(r"icon_images\image copy 3.png", max_scale=0.8, alpha=0.8, animation_duration=0.7)
+
+        # 初始化系统菜单
+        self.menu = Menu()
 
     # -------------------------------手部检测函数--------------------------------#
     def findRtHands(self, img, draw=True):
@@ -236,16 +245,16 @@ class HandHCI():
             
             # 计算两点距离
             length = cv.norm((x1, y1), (x2, y2), cv.NORM_L2)
-            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2  # 中点坐标
+            TowFinger_cx, TowFinger_cy = (x1 + x2) // 2, (y1 + y2) // 2  # 中点坐标
             
             # 使用指数映射计算音量百分比(显示用)
-            vol_percent = self.ExponentialMap(length, [40, 300], [0, 100], exponent)
+            vol_percent = self.data.ExponentialMap(length, [40, 300], [0, 100], exponent)
             
             if draw:
-                cv.putText(img, f"{int(vol_percent)}%", (cx, cy), 2, 1, color, 2)
+                cv.putText(img, f"{int(vol_percent)}%", (TowFinger_cx, TowFinger_cy), 2, 1, color, 2)
             
             # 计算实际音量值并设置系统音量
-            vol = self.ExponentialMap(length, [40, 300], [self.minVol, self.maxVol], 0.17)
+            vol = self.data.ExponentialMap(length, [40, 300], [self.minVol, self.maxVol], 0.17)
             self.volume.SetMasterVolumeLevel(vol, None)
             
             # 当距离过近时改变显示颜色(绿色)
@@ -254,7 +263,7 @@ class HandHCI():
             else:
                 color = (2, 81, 255)
 
-    def fingersPinch(self, allhands, finger1=4, finger2=8, maxRange=0.16):
+    def fingersPinch(self, allhands, finger1=4, finger2=8, maxRange=0.2):
         """
         检测双指是否捏合
         
@@ -268,17 +277,21 @@ class HandHCI():
         bool -- 是否检测到捏合动作
         """
         if allhands and allhands[0][0] == self.Bbox[0]:
-            boxW = self.Bbox[1][2] - self.Bbox[1][0]  # 边界框宽度
-            
+            boxH = self.Bbox[1][3] - self.Bbox[1][1]  # 边界框宽度
+
             # 获取双指位置
             x1, y1 = allhands[0][1][finger1][1], allhands[0][1][finger1][2]
             x2, y2 = allhands[0][1][finger2][1], allhands[0][1][finger2][2]
             
-            # 计算距离
+            # 计算两点距离
             length = cv.norm((x1, y1), (x2, y2), cv.NORM_L2)
+            # 中点坐标
+            self.TowFinger_cx, self.TowFinger_cy = (x1 + x2) // 2, (y1 + y2) // 2  
+            # 双指距离
+            self.TowFingerLenght = length
             
             # 判断是否捏合 (距离小于手框宽度的16%)
-            if length <= boxW * maxRange:
+            if length <= boxH * maxRange:
                 return True
             else:
                 return False
@@ -309,11 +322,11 @@ class HandHCI():
                 x2, y2 = allhands[0][1][17][1], allhands[0][1][17][2]
                 length = int(cv.norm((x1, y1), (x2, y2), cv.NORM_L2))
                 # 指数映射到0-100范围
-                distance = int(self.ExponentialMap(length, [0, int(img.shape[0])], [0, 100], exponent))
+                distance = int(self.data.ExponentialMap(length, [0, int(img.shape[0])], [0, 100], exponent))
                 return 100 - distance  # 取反 (距离近则数值大)
                 
             elif model == 1:  # 基于边界框宽度
-                distance = int(self.ExponentialMap(boxW, [0, int(img.shape[0])], [0, 100], exponent))
+                distance = int(self.data.ExponentialMap(boxW, [0, int(img.shape[0])], [0, 100], exponent))
                 return 100 - distance
 
     def isFront(self, allhands):
@@ -349,95 +362,36 @@ class HandHCI():
                 return False
         return False
 
-    # -------------------------------数据处理工具函数--------------------------------#
-    def EMA(self, point, alpha=0.2):
-        """
-        指数移动平均(用于位置平滑)
-        
-        参数:
-        point -- 当前点坐标(x, y)
-        alpha -- 平滑系数(0-1, 值越小越平滑)
-        
-        返回:
-        tuple -- 平滑后的坐标
-        """
-        cx, cy = point
-        
-        # 初始化历史点
-        if not hasattr(self, 'smooth_cx'):
-            self.smooth_cx = cx
-            self.smooth_cy = cy
-        
-        # EMA平滑处理
-        self.smooth_cx = self.smooth_cx * (1 - alpha) + cx * alpha
-        self.smooth_cy = self.smooth_cy * (1 - alpha) + cy * alpha
-        
-        return (int(self.smooth_cx), int(self.smooth_cy))
 
-    def ExponentialMap(self, length, input_range, output_range, exponent=1.0):
-        """
-        指数范围映射(用于非线性控制)
-        
-        参数:
-        length -- 输入值
-        input_range -- 输入范围[min, max]
-        output_range -- 输出范围[min, max]
-        exponent -- 指数参数(>1: 输出对输入变化敏感, <1: 输出对输入变化不敏感)
-        
-        返回:
-        float -- 映射后的值
-        """
-        # 确保输入在范围内
-        length = max(input_range[0], min(length, input_range[1]))
-        # 归一化
-        normalized = (length - input_range[0]) / (input_range[1] - input_range[0])
-        # 应用指数
-        exp_normalized = normalized ** exponent
-        # 映射到输出范围
-        return output_range[0] + exp_normalized * (output_range[1] - output_range[0])
     
     # -------------------------------用户界面操作函数--------------------------------#
-    def AwakenMenuBall(self, img, isFront, isPinch, color=(255, 255, 0)):
+    def HandMenu(self, img, isFront, isPinch):
         """
-        唤醒菜单球(一级菜单)
+        唤醒菜单
         
         参数:
         img -- 输入图像
         isFront -- 是否正手状态
         isPinch -- 是否捏合状态
-        color -- 菜单球颜色(默认黄色)
         
         返回:
         img -- 添加菜单球后的图像
         """
         # 检查边界框有效性
+
         if self.Bbox:
-            boxW = self.Bbox[1][2] - self.Bbox[1][0]
-            
-        # 捏合状态变更检测 (用于检测捏合动作开始)
-        if isPinch != self.frontPinchHistory and isPinch:
-            self.frontPinch = True  # 标记当前捏合
-            self.PinchIndex += 1    # 增加捏合计数
-            self.frontPinchHistory = isPinch  # 更新历史状态
-        
-        # 松开状态变更检测 (用于检测捏合结束)
-        elif isPinch != self.frontPinchHistory and not isPinch:
-            self.frontRelease = True
-        else:
-            self.frontPinch = False
-            self.frontRelease = False
-            
-        # 更新正手状态和捏合历史状态
-        if isFront and isPinch:
-            self.frontPinchHistory = True
-            self.Front = True
-        else:
-            self.frontPinchHistory = False
-            
-        # 首次捏合时唤醒菜单球
-        if self.frontPinch and self.PinchIndex == 1:
-            self.MenuBall = True
-            
+            # 菜单球定位
+            x1, y1, x2, y2 = self.Bbox[1]
+            cx, cy = (x1 + x2) // 2, y1
+            # 使用EMA平滑位置
+            self.point_menuball = self.data.EMA((cx-15, cy-15), 0.25)
+
+            # 菜单定位
+            x3, y3, x4, y4 = self.Bbox[1]
+            cx2, cy2 = (x3 + x4) // 2, y3
+            # 使用更强平滑处理
+            self.point_menu = self.data.EMA((cx2-35, cy2-35), 0.1)
+
         # 非正手状态时的重置
         if not isFront:
             self.MenuBall = False
@@ -445,46 +399,63 @@ class HandHCI():
             self.Front = False
             self.PinchIndex = 0
             # 重置动画
-            self.animator.reset_animation()
+            self.Menu_animator.reset_animation()
             self.MenuBall_animator.reset_animation()
-        
-        # 菜单球位置计算与绘制
-        if self.Bbox:
-            x1, y1, x2, y2 = self.Bbox[1]
-            cx, cy = (x1 + x2) // 2, y1
-            # 使用EMA平滑位置
-            point = self.EMA((cx-15, cy-15), 0.25)
             
-            # 仅当菜单球激活且菜单未激活时绘制
-            if self.MenuBall and not self.Menu:
-                return self.MenuBall_animator.draw_growing_matrix2(img, (point[0]-15, point[1]-15))
-                
-    def AwakenMenu(self, img):
-        """
-        唤醒主菜单(二级菜单)
+        # 捏合状态变更检测 (用于检测捏合动作开始)
+        if isPinch != self.frontPinchHistory and isPinch:
+            self.frontPinch = True  # 标记当前捏合
+            self.PinchIndex += 1    # 增加捏合计数
+
+        # 松开状态变更检测 (用于检测捏合结束)
+        elif isPinch != self.frontPinchHistory and not isPinch:
+            self.frontRelease = True
+
+        else:
+            self.frontPinch = False
+            self.frontRelease = False
         
-        参数:
-        img -- 输入图像
-        
-        返回:
-        img -- 添加菜单后的图像
-        """
-        # 菜单定位 (在边界框上方)
-        if self.Bbox:
-            x1, y1, x2, y2 = self.Bbox[1]
-            cx, cy = (x1 + x2) // 2, y1
-            # 使用更强平滑处理
-            point = self.EMA((cx-35, cy-35), 0.1)
-        
-        # 第二次捏合时唤醒主菜单
-        if self.MenuBall and self.frontPinch and self.PinchIndex == 2:
-            self.Menu = True
+        self.frontPinchHistory = isPinch  # 更新历史状态
+
+        # # 更新正手状态和捏合历史状态
+        # if isFront and isPinch:
+        #     self.frontPinchHistory = True
+        #     self.Front = True
+        # else:
+        #     self.frontPinchHistory = False
             
-        # 非正手状态时关闭菜单
-        if not self.Front:
+        # 菜单的判定
+        if self.frontPinch and self.PinchIndex == 1 and not self.Menu and self.Bbox:
+            self.MenuBall = True
             self.Menu = False
-            self.MenuBall = False
-            
-        # 绘制主菜单
-        if self.Menu:
-            return self.animator.draw_growing_matrix2(img, (point[0]-15, point[1]-15))
+        
+        elif self.frontPinch and self.PinchIndex == 2 and self.Bbox:
+                self.Menu = True
+                self.MenuBall = False
+
+        if self.frontRelease:
+            cv.imwrite(f"debug_png\\frontRelease{self.PinchIndex}.png",img)
+                
+        print(f'长按状态: {self.frontPinchHistory}')
+        print(f"单击：{self.frontPinch}")
+        print(f"松开：{self.frontRelease}")
+
+        # print(f"菜单：{self.Menu}")
+        # print(f"菜单球：{self.MenuBall}")
+        print(f"捏合次数：{self.PinchIndex}")
+
+        # 更新菜单系统参数
+        self.menu.updata(self.frontPinchHistory,
+                         self.frontPinch,
+                         self.frontRelease,
+                         self.Front,
+                         self.MenuBall,
+                         self.Menu,
+                         self.PinchIndex,
+                         self.point_menuball,
+                         self.point_menu,
+                         (self.TowFinger_cx,self.TowFinger_cy),
+                         self.TowFingerLenght)
+        
+        # 启动菜单
+        return self.menu.RunMenu(img)

@@ -26,37 +26,35 @@ def main():
     HandFlipAndPinch2Path = r'video\HandFlipAndPinch.mp4'
     HandPinchMovePath = r'video\HandPinchMove.mp4'
     AllTestPath = r'video\AllTest.mp4'
-    cap = cv.VideoCapture(AllTestPath)
+    MenuChoicePath = r'video\MenuChoice.mp4'
+    cap = cv.VideoCapture(MenuChoicePath)
     hand = HandHCI()
 
     while 1:
         succes,img = cap.read()
 
         if succes :
-            # 获取左手的信息
-            lfhand = hand.findLfHands(img)
+            # 获取左手的信息(flalse: 是否显示关键点)
+            lfhand = hand.findLfHands(img,False)
             # print(lfhand)
 
             # print(hand.isFront(lfhand))
 
-            # 判断正手捏合(flalse: 是否显示关键点)
-            isFront = hand.isFront(lfhand,False)
-            isPinch = hand.fingersPinch(lfhand,False)
+            # 判断正手捏合
+            isFront = hand.isFront(lfhand)
+            isPinch = hand.fingersPinch(lfhand)
             # print(f'isFront: {isFront}')
             # print(f'isPinch: {isPinch}')
 
             # 菜单球跳出
-            img2 = hand.AwakenMenuBall(img,isFront,isPinch)
-            img3 = hand.AwakenMenu(img)
+            img2 = hand.HandMenu(img,isFront,isPinch)
             
             if img2 is not None and img2.size > 0:
                 img = img2
-                print(f'img2')
-            elif img3 is not None and img3.size > 0:
-                img = img3
-                print(f'img3')
 
             cv.imshow("img",img)
+        else:
+            break
 
         if cv.waitKey(1) == 27:
             break

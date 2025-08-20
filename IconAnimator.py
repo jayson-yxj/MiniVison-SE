@@ -8,6 +8,7 @@ import time
 '''
 
 class IconAnimator:
+
     def __init__(self, icon_path,max_scale=2,alpha=1,animation_duration=1.0):
         # 创建图标叠加器
         self.Icon = DynamicIconOverlay(icon_path, initial_size=0.1,alpha=alpha)
@@ -17,12 +18,15 @@ class IconAnimator:
         self.max_scale = max_scale  # 最大缩放比例
         self.animation_duration = animation_duration  # 动画持续时间（秒）
         
-        # 初始化动画状态
+        # ------------------------------------初始化动画状态-------------------------------------- #
         self.animation_start_time = None
         self.current_scale = self.min_scale
         self.animation_complete = False  # 动画是否完成
+
+        # ------------------------------------初始化图标中心点------------------------------------- #
+        self.icon_center = None
     
-    def draw_growing_matrix2(self, img, center):
+    def draw_growing_matrix(self, img, center):
         # 如果动画已经完成（达到最大尺寸），直接绘制最大尺寸图标
         if self.animation_complete:
             width, height = self.Icon.get_current_size()
@@ -30,6 +34,9 @@ class IconAnimator:
             half_height = height // 2
             self.Icon.update_position(center[0] - half_width, center[1] - half_height)
 
+            # 获取图标中心坐标
+            self.icon_center = self.Icon.get_center()
+            # cv.circle(img,self.icon_center,50,(255,255,0),5)
             # cv.imshow('动画达到最大尺寸',self.Icon.overlay(img))
             return self.Icon.overlay(img)
         
@@ -98,5 +105,7 @@ class IconAnimator:
     def is_animation_complete(self):
         # 检查动画是否完成
         return self.animation_complete
-
- 
+    
+    # 返回图标中心
+    def get_icon_center(self):
+        return self.icon_center

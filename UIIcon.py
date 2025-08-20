@@ -39,7 +39,7 @@ class DynamicIconOverlay:
         self.last_update_time = time.time()
         
         # 透明度控制 (0.0 = 完全透明, 1.0 = 完全不透明)
-        self.alpha = alpha
+        self.alpha = alpha   
     
     # 设置缩放尺寸
     def set_size(self, width, height):
@@ -206,3 +206,6 @@ class DynamicIconOverlay:
         # 获取原始图标尺寸
     def get_original_size(self):
         return self.original_width, self.original_height
+    
+    def get_center(self):
+        return (self.x + self.original_width//2, self.y + self.original_height//2)
