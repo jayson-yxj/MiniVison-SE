@@ -16,7 +16,7 @@ from DataProces import Data
 
 # 手部交互类
 class HandHCI():
-    def __init__(self, staticMode=False, maxHands=2, minDetectionCon=0.75, minTrackCon=0.6):
+    def __init__(self, staticMode=False, maxHands=2, minDetectionCon=0.75, minTrackCon=0.6,POV=1):
         """
         初始化手势交互类
         
@@ -26,6 +26,9 @@ class HandHCI():
         minDetectionCon -- 最小检测置信度
         minTrackCon -- 最小跟踪置信度
         """
+        # --------------------------------人称视角-------------------------------------- #
+        self.POV = POV
+
         # -------------------------------关键点识别配置-------------------------------#
         self.staticMode = staticMode
         self.maxHands = maxHands
@@ -346,20 +349,39 @@ class HandHCI():
             
             length = cv.norm((x1, y1), (x2, y2), cv.NORM_L2)
             boxH = self.Bbox[1][3] - self.Bbox[1][1]  # 边界框高度
+
+            # 第一人称时
+            if self.POV == 1:
+                # 左手检测逻辑
+                if (allhands[0][0] == "Left" and 
+                    boxH * 0.2 <= length and 
+                    x1 >= x2 and y2 >= y1):
+                    return True
+                
+                # 右手检测逻辑
+                elif (allhands[0][0] == "Right" and 
+                    boxH * 0.2 <= length and 
+                    x2 >= x1 and y1 >= y2):
+                    return True
+                else:
+                    return False
+                
+            # 第二人称时
+            elif self.POV == 2:
+                # 左手检测逻辑
+                if (allhands[0][0] == "Left" and 
+                    boxH * 0.2 <= length and 
+                    x1 >= x2 and y2 <= y1):
+                    return True
+                
+                # 右手检测逻辑
+                elif (allhands[0][0] == "Right" and 
+                    boxH * 0.2 <= length and 
+                    x2 >= x1 and y1 <= y2):
+                    return True
+                else:
+                    return False
             
-            # 左手检测逻辑
-            if (allhands[0][0] == "Left" and 
-                boxH * 0.2 <= length and 
-                x1 >= x2 and y2 >= y1):
-                return True
-            
-            # 右手检测逻辑
-            elif (allhands[0][0] == "Right" and 
-                 boxH * 0.2 <= length and 
-                 x2 >= x1 and y1 >= y2):
-                return True
-            else:
-                return False
         return False
 
 

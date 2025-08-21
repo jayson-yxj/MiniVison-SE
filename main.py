@@ -30,7 +30,7 @@ def main():
     SetVolPath = r'video\SetVol.mp4'
     SetLightPath = r'video\SetLight.mp4'
     cap = cv.VideoCapture(0)
-    hand = HandHCI()
+    hand = HandHCI(POV=1)
 
     while 1:
         succes,img = cap.read()

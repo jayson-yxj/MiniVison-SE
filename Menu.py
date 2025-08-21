@@ -40,9 +40,9 @@ class Menu():
         # -----------------------------------图标动画器初始化------------------------------------------- #
         # 初始化图标动画器
         self.MenuBall_animator = IconAnimator(r"icon_images\image copy 3.png", max_scale=0.8, alpha=0.8, animation_duration=0.8)
-        self.Menu_animator = IconAnimator(r'icon_images\image copy 4.png', max_scale=4, alpha=0.7, animation_duration=0.6)
-        self.Volume_animator = IconAnimator(r"icon_images\image copy 5.png", max_scale=1, alpha=0.8, animation_duration=0.6)
-        self.Light_animator = IconAnimator(r"icon_images\image copy 6.png", max_scale=1, alpha=0.8, animation_duration=0.6)
+        self.Menu_animator = IconAnimator(r'icon_images\image copy 4.png', max_scale=3, alpha=0.7, animation_duration=0.6)
+        self.Volume_animator = IconAnimator(r"icon_images\image copy 5.png", max_scale=0.75, alpha=0.8, animation_duration=0.6)
+        self.Light_animator = IconAnimator(r"icon_images\image copy 6.png", max_scale=0.75, alpha=0.8, animation_duration=0.6)
 
         # ------------------------------------数据处理器-----------------------------------------------------#
         self.data = Data()
@@ -97,9 +97,9 @@ class Menu():
             point = (imgWidth//2,imgHeight//2)
 
         # 集成菜单图像
-        Menu_img = self.Menu_animator.draw_growing_matrix(img, (point[0]-15, point[1]-15))              # 菜单背景
-        Volume_img = self.Volume_animator.draw_growing_matrix(Menu_img, (point[0]-100, point[1]-15))    # 音量图标
-        return self.Light_animator.draw_growing_matrix(Volume_img, (point[0]+75, point[1]-15))          # 亮度图标
+        Menu_img = self.Menu_animator.draw_growing_matrix(img, (point[0]-30, point[1]-50))              # 菜单背景
+        Volume_img = self.Volume_animator.draw_growing_matrix(Menu_img, (point[0]-90, point[1]-50))     # 音量图标
+        return self.Light_animator.draw_growing_matrix(Volume_img, (point[0]+40, point[1]-50))          # 亮度图标
     
         
     # **************************************** 启动菜单*****************************************#
@@ -113,6 +113,8 @@ class Menu():
             # 重置动画
             self.Menu_animator.reset_animation()
             self.MenuBall_animator.reset_animation()
+            self.Light_animator.reset_animation()
+            self.Volume_animator.reset_animation()
 
         print(f'正手：{self.Front}')
 
@@ -154,9 +156,9 @@ class Menu():
                 # print(f"lenght_to_light 长按时 :{self.lenght_to_light}")
 
                 if self.lenght_to_vol is not None and self.lenght_to_light is not None:
-                    if self.lenght_to_vol <= 80 :
+                    if self.lenght_to_vol <= 70 :
                         print(f'选项：音量调节！！！')
-                    if self.lenght_to_light <= 80 :
+                    if self.lenght_to_light <= 70 :
                         print(f'选项：亮度调节！！！')
 
                 # 显示菜单
@@ -224,7 +226,7 @@ class Menu():
                 color = (0, 255, 0)
             else:
                 color = (2, 81, 255)
-                
+
             if draw:
                 cv.putText(img, f"{int(light_percent)}%", self.TowFingerCenter, 2, 1, color, 2)
             
