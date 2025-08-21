@@ -27,7 +27,9 @@ def main():
     HandPinchMovePath = r'video\HandPinchMove.mp4'
     AllTestPath = r'video\AllTest.mp4'
     MenuChoicePath = r'video\MenuChoice.mp4'
-    cap = cv.VideoCapture(MenuChoicePath)
+    SetVolPath = r'video\SetVol.mp4'
+    SetLightPath = r'video\SetLight.mp4'
+    cap = cv.VideoCapture(0)
     hand = HandHCI()
 
     while 1:

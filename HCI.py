@@ -384,7 +384,7 @@ class HandHCI():
             x1, y1, x2, y2 = self.Bbox[1]
             cx, cy = (x1 + x2) // 2, y1
             # 使用EMA平滑位置
-            self.point_menuball = self.data.EMA((cx-15, cy-15), 0.25)
+            self.point_menuball = self.data.EMA((cx-15, cy-15), 0.28)
 
             # 菜单定位
             x3, y3, x4, y4 = self.Bbox[1]
@@ -401,7 +401,7 @@ class HandHCI():
             # 重置动画
             self.Menu_animator.reset_animation()
             self.MenuBall_animator.reset_animation()
-            
+
         # 捏合状态变更检测 (用于检测捏合动作开始)
         if isPinch != self.frontPinchHistory and isPinch:
             self.frontPinch = True  # 标记当前捏合
@@ -429,12 +429,12 @@ class HandHCI():
             self.MenuBall = True
             self.Menu = False
         
-        elif self.frontPinch and self.PinchIndex == 2 and self.Bbox:
+        elif self.frontRelease and self.PinchIndex == 2 and self.Bbox:
                 self.Menu = True
                 self.MenuBall = False
 
-        if self.frontRelease:
-            cv.imwrite(f"debug_png\\frontRelease{self.PinchIndex}.png",img)
+        # if self.frontRelease:
+        #     cv.imwrite(f"debug_png\\frontRelease{self.PinchIndex}.png",img)
                 
         print(f'长按状态: {self.frontPinchHistory}')
         print(f"单击：{self.frontPinch}")
@@ -448,7 +448,7 @@ class HandHCI():
         self.menu.updata(self.frontPinchHistory,
                          self.frontPinch,
                          self.frontRelease,
-                         self.Front,
+                         isFront,
                          self.MenuBall,
                          self.Menu,
                          self.PinchIndex,
