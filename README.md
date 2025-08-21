@@ -8,7 +8,7 @@
 
 -   🖐 实时手部检测与关键点识别
     
--   🔊 手势音量控制（双指捏合滑动调节系统音量）
+-   🔊 手势音量控制（双指捏合调节系统音量）
 -   📱 代替电脑的鼠标（正在开发）
 -   🖐 功能窗口的手势拖拽（正在开发）
     
@@ -52,54 +52,7 @@ cd MiniVison-SE
 python main.py
 ```
 
-## 基本使用
 
-```
-import numpy as np
-import cv2 as cv
-from  HCI  import  HandHCI
-
-def  main():
-	AllTestPath = r'video\AllTest.mp4'
-	cap = cv.VideoCapture(AllTestPath)
-	hand = HandHCI()
-
-		while 1:
-		succes,img = cap.read()
-		if succes :
-
-		# 获取左手的信息
-		lfhand = hand.findLfHands(img)
-		# 获取右手的信息
-		rthand = hand.findRtHands(img)
-
-		# 右手控制音量
-		hand.controlVol(img,rthand)
-
-		# 获取捏合信息
-		isFront = hand.isFront(lfhand,False)
-		# 获取手的正反
-		isPinch = hand.fingersPinch(lfhand,False)
-
-		# 菜单球跳出
-		img2 = hand.AwakenMenuBall(img,isFront,isPinch)
-
-		# 菜单跳出
-		img3 = hand.AwakenMenu(img)
-
-		if img2 is not None and img2.size >  0:
-			img = img2
-
-		elif img3 is not None and img3.size >  0:
-			img = img3
-		cv.imshow("img",img)
-
-		if cv.waitKey(1) == 27:
-		break
-
-if __name__ == '__main__':
-	main()
-```
 
 ## 系统交互说明
 
@@ -126,7 +79,7 @@ if __name__ == '__main__':
 
 1.  ​**​唤醒菜单球​**​：
     
-    -   掌心朝摄像头保持1秒
+    -   掌心朝摄像头
         
     -   执行一次捏合动作
         
@@ -139,21 +92,15 @@ if __name__ == '__main__':
     -   执行第二次捏合动作
         
     -   ✅ 菜单展开动画
+
+3.  ​**​选择应用**​：
+    
+    -   菜单显示状态下
         
-
-## 项目结构
-
-```
-gesture-interaction-system/
-├── HandHCI.py             # 主控模块
-├── IconAnimator.py        # 动画效果模块
-├── UIIcon.py			   # UI图标显示模块
-├── main.py                # 示例主程序
-├── icon_images/           # 菜单图标资源
-│   ├── image copy 3.png   # 菜单球图标
-│   └── image copy 4.png   # 主菜单图标
-└── README.md
-```
+    -   执行第二次捏合动作，长按捏住时去选择
+        
+    -   ✅ 松开时确认
+        
 
 ## 高级定制
 
