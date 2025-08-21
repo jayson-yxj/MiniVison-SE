@@ -3,6 +3,8 @@
 
 基于计算机视觉的手势交互系统，利用MediaPipe实时检测手部关键点，实现手势控制计算机音量和菜单交互功能（demo）（更多功能正在开发中!!!）
 
+## 功能展示
+![功能演示](https://github.com/jayson-yxj/MiniVison-SE/video/EffectDemonstration.gif?raw=true)
 
 ## 功能特性
 
